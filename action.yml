@@ -1,0 +1,10 @@
+name: 'Actions Artifact Usage Report'
+description: 'Generates a CSV with data about the artifacts in a repo.'
+
+branding:
+  icon: 'package'
+  color: 'green'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
