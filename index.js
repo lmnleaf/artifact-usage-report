@@ -1,7 +1,7 @@
 import * as github from '@actions/github';
 import * as core from '@actions/core';
 import * as dotenv from 'dotenv';
-import { repoArtifacts } from './src/repo-artifacts.js';
+import { artifactUsageReport } from './src/artifact-report.js';
 
 const env = dotenv.config();
 const token = process.env.GITHUB_TOKEN;
@@ -12,10 +12,9 @@ async function main() {
   try {
     const octokit = new github.getOctokit(token);
     const totalDays = 7;
+    const path = './';
 
-    const artifacts = await repoArtifacts.getArtifacts(totalDays, repo, owner, octokit);
-
-    console.log('Artifacts:', artifacts);
+    await artifactUsageReport.createReport(totalDays, path, repo, owner, octokit);
   } catch(error) {
     console.log(error);
   }
