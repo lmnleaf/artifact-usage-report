@@ -1,7 +1,13 @@
 async function getArtifacts(totalDays, repo, owner, octokit) {
   let artifacts = [];
-  const daysAgo = new Date();
-  daysAgo.setDate(new Date().getDate() - totalDays);
+  let exclusiveTotalDays = totalDays - 1;
+
+  let dateToday = new Date();
+  let endDate = new Date(dateToday);
+  endDate = endDate.setUTCHours(23, 59, 59, 999);
+  let startDate = new Date(dateToday);
+  startDate.setUTCDate(dateToday.getUTCDate() - exclusiveTotalDays)
+  startDate = startDate.setUTCHours(0, 0, 0, 0);
 
   try {
     await octokit.paginate(
@@ -12,7 +18,7 @@ async function getArtifacts(totalDays, repo, owner, octokit) {
         per_page: 100
       },
       (response, done) => {
-        let stopListingArtifacts = response.data.find((artifact) => new Date(artifact.created_at) >= daysAgo);
+        let stopListingArtifacts = response.data.find((artifact) => new Date(artifact.expires_at) < startDate);
         if (stopListingArtifacts) {
           done();
         }
@@ -20,14 +26,15 @@ async function getArtifacts(totalDays, repo, owner, octokit) {
       }
     )
 
-    return filteredArtifacts(artifacts, daysAgo);
+    return filteredArtifacts(artifacts, startDate);
   } catch(error) {
     throw error;
   }
 }
 
-function filteredArtifacts(artifacts, daysAgo) {
-  return artifacts.filter((artifact) => new Date(artifact.created_at) >= daysAgo);
+function filteredArtifacts(artifacts, startDate) {
+  let filteredArtifacts = artifacts.filter((artifact) => new Date(artifact.expires_at) >= startDate);
+  return filteredArtifacts;
 }
 
 export const repoArtifacts = {
