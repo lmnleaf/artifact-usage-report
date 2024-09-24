@@ -1,7 +1,7 @@
 import { usageCalculator } from '../src/usage-calculator.js';
 
 describe("Usage Calculator", function() {
-  let totalDays = 7;
+  let currentPeriodDays = 7;
 
   let baseTime = new Date(2024, 8, 15);
   // Reminder: JavaScript's Date object uses 0-indexed months, so 8 is September
@@ -10,7 +10,7 @@ describe("Usage Calculator", function() {
   endDate = endDate.setUTCHours(23, 59, 59, 999);
 
   let startDate = new Date(baseTime);
-  startDate.setUTCDate(baseTime.getUTCDate() - (totalDays - 1));
+  startDate.setUTCDate(baseTime.getUTCDate() - (currentPeriodDays - 1));
   startDate = startDate.setUTCHours(0, 0, 0, 0);
 
   it('calculates usage when the artifact is billed for the whole period', function() {
@@ -27,8 +27,9 @@ describe("Usage Calculator", function() {
       // usage for 7 days
     };
 
-    let usage = usageCalculator.calculate(artifact, startDate, endDate, totalDays);
-    expect(usage).toEqual(6791470);
+    let usage = usageCalculator.calculate(artifact, startDate, endDate, currentPeriodDays);
+    expect(usage.current_period_usage).toEqual(6791470);
+    expect(usage.total_usage).toEqual(87318900);
   });
 
   it('calculates usage when the artifact is billed from the start date to the expiration date', function() {
@@ -45,8 +46,9 @@ describe("Usage Calculator", function() {
       // usage for 6 days
     };
 
-    let usage = usageCalculator.calculate(artifact, startDate, endDate, totalDays);
-    expect(usage).toEqual(5821260);
+    let usage = usageCalculator.calculate(artifact, startDate, endDate, currentPeriodDays);
+    expect(usage.current_period_usage).toEqual(5821260);
+    expect(usage.total_usage).toEqual(10672310);
   });
 
   it('calculates usage when the artifact is billed from the created date to the end date', function() {
@@ -63,8 +65,9 @@ describe("Usage Calculator", function() {
       // usage for 6 days
     };
 
-    let usage = usageCalculator.calculate(artifact, startDate, endDate, totalDays);
-    expect(usage).toEqual(5821260);
+    let usage = usageCalculator.calculate(artifact, startDate, endDate, currentPeriodDays);
+    expect(usage.current_period_usage).toEqual(5821260);
+    expect(usage.total_usage).toEqual(7761680);
   });
 
   it('calculates usage when the artifact is billed from the created date to the expiration date', function() {
@@ -81,8 +84,9 @@ describe("Usage Calculator", function() {
       // billed for 5 days
     };
 
-    let usage = usageCalculator.calculate(artifact, startDate, endDate, totalDays);
-    expect(usage).toEqual(4851050);
+    let usage = usageCalculator.calculate(artifact, startDate, endDate, currentPeriodDays);
+    expect(usage.current_period_usage).toEqual(4851050);
+    expect(usage.total_usage).toEqual(4851050);
   });
 
   it('calculates usage when the artifact is created the same day as the end date', function() {
@@ -98,8 +102,9 @@ describe("Usage Calculator", function() {
       // usage for 1 day
     };
 
-    let usage = usageCalculator.calculate(artifact, startDate, endDate, totalDays);
-    expect(usage).toEqual(970210);
+    let usage = usageCalculator.calculate(artifact, startDate, endDate, currentPeriodDays);
+    expect(usage.current_period_usage).toEqual(970210);
+    expect(usage.total_usage).toEqual(30076510);
   });
 
   it('calculates usage when the artifact is created the same day as the start date', function() {
@@ -115,7 +120,8 @@ describe("Usage Calculator", function() {
       // usage for 1 day
     };
 
-    let usage = usageCalculator.calculate(artifact, startDate, endDate, totalDays);
-    expect(usage).toEqual(970210);
+    let usage = usageCalculator.calculate(artifact, startDate, endDate, currentPeriodDays);
+    expect(usage.current_period_usage).toEqual(970210);
+    expect(usage.total_usage).toEqual(8731890);
   });
 });
