@@ -31110,8 +31110,13 @@ function writeFile(path, data, callback) {
 }
 
 function reportSummary(repo, artifacts) {
-  return 'Total artifacts found: ' + artifacts.length.toString() + '.';
+  let reportSummary = 'Repo: ' + repo + '. \n' +
+    'Total artifacts found: ' + artifacts.length.toString() + '. \n' +
+    'Current period usage in bytes: ' + artifacts.reduce((total, artifact) => total + artifact.current_period_usage_in_bytes, 0) + '.'
+
+  return reportSummary;
 }
+
 const artifactUsageReport = {
   writeFile: writeFile,
   createReport: createReport
@@ -31138,6 +31143,8 @@ async function main() {
     const octokit = new github.getOctokit(token);
     const currentPeriodDays = processInput(core.getInput('current_period_days'));
     const path = core.getInput('path');
+    const owner = context.repo.owner;
+    const repo = context.repo.repo;
 
     await artifactUsageReport.createReport(currentPeriodDays, path, repo, owner, octokit);
 

@@ -69,8 +69,13 @@ function writeFile(path, data, callback) {
 }
 
 function reportSummary(repo, artifacts) {
-  return 'Total artifacts found: ' + artifacts.length.toString() + '.';
+  let reportSummary = 'Repo: ' + repo + '. \n' +
+    'Total artifacts found: ' + artifacts.length.toString() + '. \n' +
+    'Current period usage in bytes: ' + artifacts.reduce((total, artifact) => total + artifact.current_period_usage_in_bytes, 0) + '.'
+
+  return reportSummary;
 }
+
 export const artifactUsageReport = {
   writeFile: writeFile,
   createReport: createReport
