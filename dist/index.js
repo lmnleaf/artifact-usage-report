@@ -5977,374 +5977,6 @@ exports.Deprecation = Deprecation;
 
 /***/ }),
 
-/***/ 6371:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-const fs = __nccwpck_require__(7147)
-const path = __nccwpck_require__(1017)
-const os = __nccwpck_require__(2037)
-const crypto = __nccwpck_require__(6113)
-const packageJson = __nccwpck_require__(9968)
-
-const version = packageJson.version
-
-const LINE = /(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)/mg
-
-// Parse src into an Object
-function parse (src) {
-  const obj = {}
-
-  // Convert buffer to string
-  let lines = src.toString()
-
-  // Convert line breaks to same format
-  lines = lines.replace(/\r\n?/mg, '\n')
-
-  let match
-  while ((match = LINE.exec(lines)) != null) {
-    const key = match[1]
-
-    // Default undefined or null to empty string
-    let value = (match[2] || '')
-
-    // Remove whitespace
-    value = value.trim()
-
-    // Check if double quoted
-    const maybeQuote = value[0]
-
-    // Remove surrounding quotes
-    value = value.replace(/^(['"`])([\s\S]*)\1$/mg, '$2')
-
-    // Expand newlines if double quoted
-    if (maybeQuote === '"') {
-      value = value.replace(/\\n/g, '\n')
-      value = value.replace(/\\r/g, '\r')
-    }
-
-    // Add to object
-    obj[key] = value
-  }
-
-  return obj
-}
-
-function _parseVault (options) {
-  const vaultPath = _vaultPath(options)
-
-  // Parse .env.vault
-  const result = DotenvModule.configDotenv({ path: vaultPath })
-  if (!result.parsed) {
-    const err = new Error(`MISSING_DATA: Cannot parse ${vaultPath} for an unknown reason`)
-    err.code = 'MISSING_DATA'
-    throw err
-  }
-
-  // handle scenario for comma separated keys - for use with key rotation
-  // example: DOTENV_KEY="dotenv://:key_1234@dotenvx.com/vault/.env.vault?environment=prod,dotenv://:key_7890@dotenvx.com/vault/.env.vault?environment=prod"
-  const keys = _dotenvKey(options).split(',')
-  const length = keys.length
-
-  let decrypted
-  for (let i = 0; i < length; i++) {
-    try {
-      // Get full key
-      const key = keys[i].trim()
-
-      // Get instructions for decrypt
-      const attrs = _instructions(result, key)
-
-      // Decrypt
-      decrypted = DotenvModule.decrypt(attrs.ciphertext, attrs.key)
-
-      break
-    } catch (error) {
-      // last key
-      if (i + 1 >= length) {
-        throw error
-      }
-      // try next key
-    }
-  }
-
-  // Parse decrypted .env string
-  return DotenvModule.parse(decrypted)
-}
-
-function _log (message) {
-  console.log(`[dotenv@${version}][INFO] ${message}`)
-}
-
-function _warn (message) {
-  console.log(`[dotenv@${version}][WARN] ${message}`)
-}
-
-function _debug (message) {
-  console.log(`[dotenv@${version}][DEBUG] ${message}`)
-}
-
-function _dotenvKey (options) {
-  // prioritize developer directly setting options.DOTENV_KEY
-  if (options && options.DOTENV_KEY && options.DOTENV_KEY.length > 0) {
-    return options.DOTENV_KEY
-  }
-
-  // secondary infra already contains a DOTENV_KEY environment variable
-  if (process.env.DOTENV_KEY && process.env.DOTENV_KEY.length > 0) {
-    return process.env.DOTENV_KEY
-  }
-
-  // fallback to empty string
-  return ''
-}
-
-function _instructions (result, dotenvKey) {
-  // Parse DOTENV_KEY. Format is a URI
-  let uri
-  try {
-    uri = new URL(dotenvKey)
-  } catch (error) {
-    if (error.code === 'ERR_INVALID_URL') {
-      const err = new Error('INVALID_DOTENV_KEY: Wrong format. Must be in valid uri format like dotenv://:key_1234@dotenvx.com/vault/.env.vault?environment=development')
-      err.code = 'INVALID_DOTENV_KEY'
-      throw err
-    }
-
-    throw error
-  }
-
-  // Get decrypt key
-  const key = uri.password
-  if (!key) {
-    const err = new Error('INVALID_DOTENV_KEY: Missing key part')
-    err.code = 'INVALID_DOTENV_KEY'
-    throw err
-  }
-
-  // Get environment
-  const environment = uri.searchParams.get('environment')
-  if (!environment) {
-    const err = new Error('INVALID_DOTENV_KEY: Missing environment part')
-    err.code = 'INVALID_DOTENV_KEY'
-    throw err
-  }
-
-  // Get ciphertext payload
-  const environmentKey = `DOTENV_VAULT_${environment.toUpperCase()}`
-  const ciphertext = result.parsed[environmentKey] // DOTENV_VAULT_PRODUCTION
-  if (!ciphertext) {
-    const err = new Error(`NOT_FOUND_DOTENV_ENVIRONMENT: Cannot locate environment ${environmentKey} in your .env.vault file.`)
-    err.code = 'NOT_FOUND_DOTENV_ENVIRONMENT'
-    throw err
-  }
-
-  return { ciphertext, key }
-}
-
-function _vaultPath (options) {
-  let possibleVaultPath = null
-
-  if (options && options.path && options.path.length > 0) {
-    if (Array.isArray(options.path)) {
-      for (const filepath of options.path) {
-        if (fs.existsSync(filepath)) {
-          possibleVaultPath = filepath.endsWith('.vault') ? filepath : `${filepath}.vault`
-        }
-      }
-    } else {
-      possibleVaultPath = options.path.endsWith('.vault') ? options.path : `${options.path}.vault`
-    }
-  } else {
-    possibleVaultPath = path.resolve(process.cwd(), '.env.vault')
-  }
-
-  if (fs.existsSync(possibleVaultPath)) {
-    return possibleVaultPath
-  }
-
-  return null
-}
-
-function _resolveHome (envPath) {
-  return envPath[0] === '~' ? path.join(os.homedir(), envPath.slice(1)) : envPath
-}
-
-function _configVault (options) {
-  _log('Loading env from encrypted .env.vault')
-
-  const parsed = DotenvModule._parseVault(options)
-
-  let processEnv = process.env
-  if (options && options.processEnv != null) {
-    processEnv = options.processEnv
-  }
-
-  DotenvModule.populate(processEnv, parsed, options)
-
-  return { parsed }
-}
-
-function configDotenv (options) {
-  const dotenvPath = path.resolve(process.cwd(), '.env')
-  let encoding = 'utf8'
-  const debug = Boolean(options && options.debug)
-
-  if (options && options.encoding) {
-    encoding = options.encoding
-  } else {
-    if (debug) {
-      _debug('No encoding is specified. UTF-8 is used by default')
-    }
-  }
-
-  let optionPaths = [dotenvPath] // default, look for .env
-  if (options && options.path) {
-    if (!Array.isArray(options.path)) {
-      optionPaths = [_resolveHome(options.path)]
-    } else {
-      optionPaths = [] // reset default
-      for (const filepath of options.path) {
-        optionPaths.push(_resolveHome(filepath))
-      }
-    }
-  }
-
-  // Build the parsed data in a temporary object (because we need to return it).  Once we have the final
-  // parsed data, we will combine it with process.env (or options.processEnv if provided).
-  let lastError
-  const parsedAll = {}
-  for (const path of optionPaths) {
-    try {
-      // Specifying an encoding returns a string instead of a buffer
-      const parsed = DotenvModule.parse(fs.readFileSync(path, { encoding }))
-
-      DotenvModule.populate(parsedAll, parsed, options)
-    } catch (e) {
-      if (debug) {
-        _debug(`Failed to load ${path} ${e.message}`)
-      }
-      lastError = e
-    }
-  }
-
-  let processEnv = process.env
-  if (options && options.processEnv != null) {
-    processEnv = options.processEnv
-  }
-
-  DotenvModule.populate(processEnv, parsedAll, options)
-
-  if (lastError) {
-    return { parsed: parsedAll, error: lastError }
-  } else {
-    return { parsed: parsedAll }
-  }
-}
-
-// Populates process.env from .env file
-function config (options) {
-  // fallback to original dotenv if DOTENV_KEY is not set
-  if (_dotenvKey(options).length === 0) {
-    return DotenvModule.configDotenv(options)
-  }
-
-  const vaultPath = _vaultPath(options)
-
-  // dotenvKey exists but .env.vault file does not exist
-  if (!vaultPath) {
-    _warn(`You set DOTENV_KEY but you are missing a .env.vault file at ${vaultPath}. Did you forget to build it?`)
-
-    return DotenvModule.configDotenv(options)
-  }
-
-  return DotenvModule._configVault(options)
-}
-
-function decrypt (encrypted, keyStr) {
-  const key = Buffer.from(keyStr.slice(-64), 'hex')
-  let ciphertext = Buffer.from(encrypted, 'base64')
-
-  const nonce = ciphertext.subarray(0, 12)
-  const authTag = ciphertext.subarray(-16)
-  ciphertext = ciphertext.subarray(12, -16)
-
-  try {
-    const aesgcm = crypto.createDecipheriv('aes-256-gcm', key, nonce)
-    aesgcm.setAuthTag(authTag)
-    return `${aesgcm.update(ciphertext)}${aesgcm.final()}`
-  } catch (error) {
-    const isRange = error instanceof RangeError
-    const invalidKeyLength = error.message === 'Invalid key length'
-    const decryptionFailed = error.message === 'Unsupported state or unable to authenticate data'
-
-    if (isRange || invalidKeyLength) {
-      const err = new Error('INVALID_DOTENV_KEY: It must be 64 characters long (or more)')
-      err.code = 'INVALID_DOTENV_KEY'
-      throw err
-    } else if (decryptionFailed) {
-      const err = new Error('DECRYPTION_FAILED: Please check your DOTENV_KEY')
-      err.code = 'DECRYPTION_FAILED'
-      throw err
-    } else {
-      throw error
-    }
-  }
-}
-
-// Populate process.env with parsed values
-function populate (processEnv, parsed, options = {}) {
-  const debug = Boolean(options && options.debug)
-  const override = Boolean(options && options.override)
-
-  if (typeof parsed !== 'object') {
-    const err = new Error('OBJECT_REQUIRED: Please check the processEnv argument being passed to populate')
-    err.code = 'OBJECT_REQUIRED'
-    throw err
-  }
-
-  // Set process.env
-  for (const key of Object.keys(parsed)) {
-    if (Object.prototype.hasOwnProperty.call(processEnv, key)) {
-      if (override === true) {
-        processEnv[key] = parsed[key]
-      }
-
-      if (debug) {
-        if (override === true) {
-          _debug(`"${key}" is already defined and WAS overwritten`)
-        } else {
-          _debug(`"${key}" is already defined and was NOT overwritten`)
-        }
-      }
-    } else {
-      processEnv[key] = parsed[key]
-    }
-  }
-}
-
-const DotenvModule = {
-  configDotenv,
-  _configVault,
-  _parseVault,
-  config,
-  decrypt,
-  parse,
-  populate
-}
-
-module.exports.configDotenv = DotenvModule.configDotenv
-module.exports._configVault = DotenvModule._configVault
-module.exports._parseVault = DotenvModule._parseVault
-module.exports.config = DotenvModule.config
-module.exports.decrypt = DotenvModule.decrypt
-module.exports.parse = DotenvModule.parse
-module.exports.populate = DotenvModule.populate
-
-module.exports = DotenvModule
-
-
-/***/ }),
-
 /***/ 9462:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -31264,13 +30896,6 @@ function parseParams (str) {
 module.exports = parseParams
 
 
-/***/ }),
-
-/***/ 9968:
-/***/ ((module) => {
-
-module.exports = JSON.parse('{"name":"dotenv","version":"16.4.5","description":"Loads environment variables from .env file","main":"lib/main.js","types":"lib/main.d.ts","exports":{".":{"types":"./lib/main.d.ts","require":"./lib/main.js","default":"./lib/main.js"},"./config":"./config.js","./config.js":"./config.js","./lib/env-options":"./lib/env-options.js","./lib/env-options.js":"./lib/env-options.js","./lib/cli-options":"./lib/cli-options.js","./lib/cli-options.js":"./lib/cli-options.js","./package.json":"./package.json"},"scripts":{"dts-check":"tsc --project tests/types/tsconfig.json","lint":"standard","lint-readme":"standard-markdown","pretest":"npm run lint && npm run dts-check","test":"tap tests/*.js --100 -Rspec","test:coverage":"tap --coverage-report=lcov","prerelease":"npm test","release":"standard-version"},"repository":{"type":"git","url":"git://github.com/motdotla/dotenv.git"},"funding":"https://dotenvx.com","keywords":["dotenv","env",".env","environment","variables","config","settings"],"readmeFilename":"README.md","license":"BSD-2-Clause","devDependencies":{"@definitelytyped/dtslint":"^0.0.133","@types/node":"^18.11.3","decache":"^4.6.1","sinon":"^14.0.1","standard":"^17.0.0","standard-markdown":"^7.1.0","standard-version":"^9.5.0","tap":"^16.3.0","tar":"^6.1.11","typescript":"^4.8.4"},"engines":{"node":">=12"},"browser":{"fs":false}}');
-
 /***/ })
 
 /******/ });
@@ -31314,20 +30939,211 @@ module.exports = JSON.parse('{"name":"dotenv","version":"16.4.5","description":"
 var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
-/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(3746);
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(6791);
-/* harmony import */ var dotenv__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(6371);
+
+// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
+var github = __nccwpck_require__(3746);
+// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
+var core = __nccwpck_require__(6791);
+;// CONCATENATED MODULE: ./src/usage-calculator.js
+function calculate(artifact, startDate, endDate, currentPeriodDays) {
+  let currentPeriodBillableDays = currentPeriodDays;
+  let createdDate = new Date(artifact.created_at);
+  let expiresDate = new Date(artifact.expires_at);
+
+  let totalDays = Math.ceil((expiresDate - createdDate) / (24 * 60 * 60 * 1000) + 1);
+
+  if (createdDate > startDate) {
+    if (String(artifact.expired).toLowerCase() === 'true') {
+      createdDate = createdDate.setUTCHours(0, 0, 0, 0);
+      expiresDate = expiresDate.setUTCHours(23, 59, 59, 999);
+      currentPeriodBillableDays = Math.ceil((expiresDate - createdDate) / (24 * 60 * 60 * 1000));
+    } else {
+      currentPeriodBillableDays = Math.ceil((endDate - createdDate) / (24 * 60 * 60 * 1000));
+    }
+  } else {
+    if (String(artifact.expired).toLowerCase() === 'true') {
+      currentPeriodBillableDays = Math.ceil((expiresDate - startDate) / (24 * 60 * 60 * 1000));
+    }
+  }
+
+  let usage = {
+    current_period_usage: artifact.size_in_bytes * currentPeriodBillableDays,
+    total_usage: artifact.size_in_bytes * totalDays
+  };
+
+  return usage;
+}
+
+const usageCalculator = {
+  calculate: calculate
+}
+
+;// CONCATENATED MODULE: ./src/repo-artifacts.js
+
+
+async function getArtifacts(currentPeriodDays, repo, owner, octokit) {
+  let artifacts = [];
+  let exclusiveTotalDays = currentPeriodDays - 1;
+
+  let dateToday = new Date();
+  let endDate = new Date(dateToday);
+  endDate = endDate.setUTCHours(23, 59, 59, 999);
+  let startDate = new Date(dateToday);
+  startDate.setUTCDate(dateToday.getUTCDate() - exclusiveTotalDays)
+  startDate = startDate.setUTCHours(0, 0, 0, 0);
+
+  try {
+    await octokit.paginate(
+      octokit.rest.actions.listArtifactsForRepo,
+      {
+        owner,
+        repo,
+        per_page: 100
+      },
+      (response, done) => {
+        let stopListingArtifacts = response.data.find((artifact) => new Date(artifact.expires_at) < startDate);
+        if (stopListingArtifacts) {
+          done();
+        }
+        artifacts.push(...response.data);
+      }
+    )
+
+    return artifactsWithUsage(artifacts, startDate, endDate, currentPeriodDays);
+  } catch(error) {
+    throw error;
+  }
+}
+
+function artifactsWithUsage(artifacts, startDate, endDate, currentPeriodDays) {
+  let filteredArtifacts = artifacts.filter((artifact) => new Date(artifact.expires_at) >= startDate);
+
+  let artifactsWithUsage = filteredArtifacts.map((artifact) => {
+    let usage = usageCalculator.calculate(artifact, startDate, endDate, currentPeriodDays);
+
+    let newArtifact = {...artifact,
+      current_period_usage_in_bytes: usage.current_period_usage,
+      total_usage_in_bytes: usage.total_usage
+    };
+
+    return newArtifact;
+  });
+
+  return artifactsWithUsage;
+}
+
+const repoArtifacts = {
+  getArtifacts: getArtifacts
+}
+
+// EXTERNAL MODULE: external "fs"
+var external_fs_ = __nccwpck_require__(7147);
+;// CONCATENATED MODULE: ./src/artifact-report.js
+
+
+
+async function createReport(currentPeriodDays, path, repo, owner, octokit) {
+  let artifacts = [];
+  try {
+    artifacts = await repoArtifacts.getArtifacts(currentPeriodDays, repo, owner, octokit);
+
+    if (artifacts.length === 0) {
+      return 'No artifacts found.';
+    }
+
+    writeReport(artifacts, path);
+  } catch(error) {
+    throw error;
+  }
+
+  return reportSummary(repo, artifacts);
+}
+
+function writeReport(artifacts, path) {
+  const csvRows = artifacts.map((artifact) => [
+    artifact.id,
+    artifact.node_id,
+    artifact.name,
+    artifact.size_in_bytes,
+    artifact.current_period_usage_in_bytes,
+    artifact.total_usage_in_bytes,
+    artifact.expired,
+    artifact.created_at,
+    artifact.updated_at,
+    artifact.expires_at,
+    artifact.workflow_run.id,
+    artifact.workflow_run.repository_id,
+    artifact.workflow_run.head_repository_id,
+    artifact.workflow_run.head_branch,
+    artifact.workflow_run.head_sha,
+    artifact.url,
+    artifact.archive_download_url
+  ]);
+
+  csvRows.unshift([
+    'id',
+    'node_id',
+    'name',
+    'size_in_bytes',
+    'current_period_usage_in_bytes', // from period start date to expires_at or today's date, inclusive
+    'total_usage_in_bytes', // from created_at to expires_at, inclusive
+    'expired',
+    'created_at',
+    'updated_at',
+    'expires_at',
+    'workflow_run.id',
+    'workflow_run.repository_id',
+    'workflow_run.head_repository_id',
+    'workflow_run.head_branch',
+    'workflow_run.head_sha',
+    'url',
+    'archive_download_url'
+  ]);
+
+  artifactUsageReport.writeFile(path + 'artifact-usage-report.csv', csvRows.join('\r\n'), (error) => {
+    console.log(error || 'Report created successfully.');
+  })
+}
+
+function writeFile(path, data, callback) {
+  external_fs_.writeFile(path, data, callback);
+}
+
+function reportSummary(repo, artifacts) {
+  return 'Total artifacts found: ' + artifacts.length.toString() + '.';
+}
+const artifactUsageReport = {
+  writeFile: writeFile,
+  createReport: createReport
+}
+
+;// CONCATENATED MODULE: ./index.js
 
 
 
 
-const env = dotenv__WEBPACK_IMPORTED_MODULE_2__.config();
+// Note: use when running locally
+// import * as dotenv from 'dotenv';
+// const env = dotenv.config();
+// const token = process.env.GITHUB_TOKEN;
+// const owner = process.env.OWNER;
+// const repo = process.env.REPO;
+// const path = './';
+
+const context = github.context;
 
 async function main() {
   try {
-    console.log('Hello World!');
+    const token = core.getInput('token');
+    const octokit = new github.getOctokit(token);
+    const currentPeriodDays = processInput(core.getInput('current_period_days'));
+    const path = core.getInput('path');
+
+    await artifactUsageReport.createReport(currentPeriodDays, path, repo, owner, octokit);
+
+    return core.notice('Artifact usage report created.');
   } catch(error) {
-    console.log(error);
+    core.setFailed(error.message);
   }
 }
 
