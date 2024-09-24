@@ -11,10 +11,10 @@ const repo = process.env.REPO;
 async function main() {
   try {
     const octokit = new github.getOctokit(token);
-    const totalDays = 7;
+    const currentPeriodDays = 7;
     const path = './';
 
-    await artifactUsageReport.createReport(totalDays, path, repo, owner, octokit);
+    await artifactUsageReport.createReport(currentPeriodDays, path, repo, owner, octokit);
   } catch(error) {
     console.log(error);
   }

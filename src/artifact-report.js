@@ -1,10 +1,10 @@
 import { repoArtifacts } from './repo-artifacts.js';
 import * as fs from 'fs';
 
-async function createReport(totalDays, path, repo, owner, octokit) {
+async function createReport(currentPeriodDays, path, repo, owner, octokit) {
   let artifacts = [];
   try {
-    artifacts = await repoArtifacts.getArtifacts(totalDays, repo, owner, octokit);
+    artifacts = await repoArtifacts.getArtifacts(currentPeriodDays, repo, owner, octokit);
 
     if (artifacts.length === 0) {
       return 'No artifacts found.';
@@ -24,6 +24,8 @@ function writeReport(artifacts, path) {
     artifact.node_id,
     artifact.name,
     artifact.size_in_bytes,
+    artifact.current_period_usage_in_bytes,
+    artifact.total_usage_in_bytes,
     artifact.expired,
     artifact.created_at,
     artifact.updated_at,
@@ -42,6 +44,8 @@ function writeReport(artifacts, path) {
     'node_id',
     'name',
     'size_in_bytes',
+    'current_period_usage_in_bytes', // from period start date to expires_at or today's date, inclusive
+    'total_usage_in_bytes', // from created_at to expires_at, inclusive
     'expired',
     'created_at',
     'updated_at',
