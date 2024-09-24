@@ -1,6 +1,8 @@
-async function getArtifacts(totalDays, repo, owner, octokit) {
+import { usageCalculator } from './usage-calculator.js';
+
+async function getArtifacts(currentPeriodDays, repo, owner, octokit) {
   let artifacts = [];
-  let exclusiveTotalDays = totalDays - 1;
+  let exclusiveTotalDays = currentPeriodDays - 1;
 
   let dateToday = new Date();
   let endDate = new Date(dateToday);
@@ -26,15 +28,27 @@ async function getArtifacts(totalDays, repo, owner, octokit) {
       }
     )
 
-    return filteredArtifacts(artifacts, startDate);
+    return artifactsWithUsage(artifacts, startDate, endDate, currentPeriodDays);
   } catch(error) {
     throw error;
   }
 }
 
-function filteredArtifacts(artifacts, startDate) {
+function artifactsWithUsage(artifacts, startDate, endDate, currentPeriodDays) {
   let filteredArtifacts = artifacts.filter((artifact) => new Date(artifact.expires_at) >= startDate);
-  return filteredArtifacts;
+
+  let artifactsWithUsage = filteredArtifacts.map((artifact) => {
+    let usage = usageCalculator.calculate(artifact, startDate, endDate, currentPeriodDays);
+
+    let newArtifact = {...artifact,
+      current_period_usage_in_bytes: usage.current_period_usage,
+      total_usage_in_bytes: usage.total_usage
+    };
+
+    return newArtifact;
+  });
+
+  return artifactsWithUsage;
 }
 
 export const repoArtifacts = {

@@ -15,6 +15,8 @@ describe("Repo Artifacts", function() {
       name: 'artifact',
       size_in_bytes: 930725,
       expired: false,
+      created_at: new Date(baseTime.getTime() - (24 * 60 * 60 * 1000 * 5)).toISOString(),
+      // created 5 days ago
       expires_at: new Date(baseTime.getTime() + (24 * 60 * 60 * 1000 * 5)).toISOString()
       // expires 5 days from now, including today
     },
@@ -23,6 +25,8 @@ describe("Repo Artifacts", function() {
       name: 'artifact',
       size_in_bytes: 970351,
       expired: false,
+      created_at: new Date(baseTime.getTime() - (24 * 60 * 60 * 1000 * 3)).toISOString(),
+      // created 3 days ago
       expires_at: new Date(baseTime.getTime() + (3 * 60 * 60 * 1000)).toISOString()
       // expires 3 hours from now (expires today)
     },
@@ -31,6 +35,8 @@ describe("Repo Artifacts", function() {
       name: 'artifact',
       size_in_bytes: 921372,
       expired: true,
+      created_at: new Date(baseTime.getTime() - (24 * 60 * 60 * 1000 * 4)).toISOString(),
+      // created 4 days ago
       expires_at: new Date(baseTime.getTime() - (12 * 60 * 60 * 1000)).toISOString()
       // expired 12 hours ago (expired today)
     },
@@ -39,6 +45,8 @@ describe("Repo Artifacts", function() {
       name: 'artifact',
       size_in_bytes: 970209,
       expired: true,
+      created_at: new Date(baseTime.getTime() - (24 * 60 * 60 * 1000 * 6)).toISOString(),
+      // created 6 days ago
       expires_at: new Date(baseTime.getTime() - (24 * 60 * 60 * 1000 * 1)).toISOString()
       // expired yesterday
     },
@@ -47,14 +55,16 @@ describe("Repo Artifacts", function() {
       name: "artifact",
       size_in_bytes: 476841352,
       expired: true,
+      created_at: '2024-08-01T22:51:24Z',
       expires_at: new Date(baseTime.getTime() - (24 * 60 * 60 * 1000 * 6)).toISOString()
-      // created 7 days ago, including today
+      // expires 7 days ago, including today
     },
     {
       id: 1653352710,
       name: "artifact",
       size_in_bytes: 934441,
       expired: true,
+      created_at: '2024-07-01T22:51:24Z',
       expires_at: new Date(baseTime.getTime() - (24 * 60 * 60 * 1000 * 7)).toISOString()
       // expired 8 days ago, including today
     },
@@ -63,6 +73,7 @@ describe("Repo Artifacts", function() {
       name: "artifact",
       size_in_bytes: 934441,
       expired: true,
+      created_at: '2024-07-01T22:51:24Z',
       expires_at: new Date(baseTime.getTime() - (24 * 60 * 60 * 1000 * 8)).toISOString()
       // expired 9 days ago, including today
     },
@@ -71,6 +82,7 @@ describe("Repo Artifacts", function() {
       name: "artifact",
       size_in_bytes: 934441,
       expired: true,
+      created_at: '2024-07-01T22:51:24Z',
       expires_at: new Date(baseTime.getTime() - (24 * 60 * 60 * 1000 * 14)).toISOString()
       // expired 15 days ago, including today
     },
@@ -79,6 +91,7 @@ describe("Repo Artifacts", function() {
       name: "artifact",
       size_in_bytes: 934441,
       expired: true,
+      created_at: '2024-07-01T22:51:24Z',
       expires_at: new Date(baseTime.getTime() - (24 * 60 * 60 * 1000 * 15)).toISOString()
       // expired 16 days ago, including today
     },
@@ -87,6 +100,7 @@ describe("Repo Artifacts", function() {
       name: "artifact",
       size_in_bytes: 9551553,
       expired: true,
+      created_at: '2024-07-01T22:51:24Z',
       expires_at: new Date(baseTime.getTime() - (24 * 60 * 60 * 1000 * 30)).toISOString()
       // expired 31 days ago, including today
     },
@@ -142,6 +156,25 @@ describe("Repo Artifacts", function() {
     for (let i = 0; i < artifacts.length; i++) {
       expect(new Date(artifacts[i].expires_at) >= startDate).toBeTrue();
     }
+  });
+
+  it('sets current period and total usage on the artifacts', async function () {
+    let startDate = new Date(date);
+    startDate.setUTCDate(date.getUTCDate() - 6)
+    startDate = startDate.setUTCHours(0, 0, 0, 0);
+
+    let artifacts = await repoArtifacts.getArtifacts(2, repo, owner, octokit);
+
+    expect(octokit.paginate).toHaveBeenCalled();
+    expect(artifacts.length).toBe(4);
+    expect(artifacts[0].current_period_usage_in_bytes).toBe(1861450);
+    expect(artifacts[0].total_usage_in_bytes).toBe(10237975);
+    expect(artifacts[1].current_period_usage_in_bytes).toBe(1940702);
+    expect(artifacts[1].total_usage_in_bytes).toBe(4851755);
+    expect(artifacts[2].current_period_usage_in_bytes).toBe(1842744);
+    expect(artifacts[2].total_usage_in_bytes).toBe(4606860);
+    expect(artifacts[3].current_period_usage_in_bytes).toBe(970209);
+    expect(artifacts[3].total_usage_in_bytes).toBe(5821254);
   });
 
   it('handles errors', async function() {
