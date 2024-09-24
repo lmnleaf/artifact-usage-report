@@ -172,7 +172,9 @@ describe("Artifacts Usage Report", function() {
     const reportSummary = await artifactUsageReport.createReport(totalDays, path, repo, owner, octokit);
 
     expect(reportSummary).toEqual(
-      'Total artifacts found: 4.'
+      'Repo: repoA.' +
+      'Total artifacts found: 4.' +
+      'Current period usage in bytes: 3881166.'
     );
   });
 

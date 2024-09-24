@@ -18,6 +18,8 @@ async function main() {
     const octokit = new github.getOctokit(token);
     const currentPeriodDays = processInput(core.getInput('current_period_days'));
     const path = core.getInput('path');
+    const owner = context.repo.owner;
+    const repo = context.repo.repo;
 
     await artifactUsageReport.createReport(currentPeriodDays, path, repo, owner, octokit);
 
