@@ -1,10 +1,11 @@
-import { repoArtifacts } from './repo-artifacts.js';
+import { orgRepos } from './org-repos.js';
 import * as fs from 'fs';
 
-async function createReport(currentPeriodDays, path, repo, owner, octokit) {
+async function createReport(currentPeriodDays, path, repos, owner, octokit) {
   let artifacts = [];
+
   try {
-    artifacts = await repoArtifacts.getArtifacts(currentPeriodDays, repo, owner, octokit);
+    artifacts = await orgRepos.getArtifactsForRepos(currentPeriodDays, repos, owner, octokit);
 
     if (artifacts.length === 0) {
       return 'No artifacts found.';
@@ -15,7 +16,7 @@ async function createReport(currentPeriodDays, path, repo, owner, octokit) {
     throw error;
   }
 
-  return reportSummary(repo, artifacts);
+  return reportSummary(repos, artifacts);
 }
 
 function writeReport(artifacts, path) {
@@ -68,10 +69,13 @@ function writeFile(path, data, callback) {
   fs.writeFile(path, data, callback);
 }
 
-function reportSummary(repo, artifacts) {
-  let reportSummary = 'Repo: ' + repo + '. \n' +
-    'Total artifacts found: ' + artifacts.length.toString() + '. \n' +
-    'Current period usage in bytes: ' + artifacts.reduce((total, artifact) => total + artifact.current_period_usage_in_bytes, 0) + '.'
+function reportSummary(repos, artifacts) {
+  let reposSummary = repos.length === 1 && repos[0] === 'all' ? 'All Org Repos.' : repos.join(', ') + '.';
+  let usageSummary = artifacts.reduce((total, artifact) => total + artifact.current_period_usage_in_bytes, 0);
+
+  let reportSummary = 'Repos: ' + reposSummary + '\n' +
+    'Total artifacts found: ' + artifacts.length.toString() + '.\n' +
+    'Current period usage in bytes: ' + usageSummary.toString() + '.';
 
   return reportSummary;
 }

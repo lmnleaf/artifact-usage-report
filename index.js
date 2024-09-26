@@ -1,6 +1,7 @@
 import * as github from '@actions/github';
 import * as core from '@actions/core';
 import { artifactUsageReport } from './src/artifact-report.js';
+import { processInput } from './src/process-input.js';
 
 // Note: use when running locally
 // import * as dotenv from 'dotenv';
@@ -16,14 +17,15 @@ async function main() {
   try {
     const token = core.getInput('token');
     const octokit = new github.getOctokit(token);
-    const currentPeriodDays = processInput(core.getInput('current_period_days'));
+    const daysInput = core.getInput('current_period_days');
     const path = core.getInput('path');
-    const owner = context.repo.owner;
-    const repo = context.repo.repo;
+    const reposInput = core.getInput('repos');
 
-    await artifactUsageReport.createReport(currentPeriodDays, path, repo, owner, octokit);
+    const { currentPeriodDays, repos, owner } = processInput(daysInput, reposInput, context);
 
-    return core.notice('Artifact usage report created.');
+    const reportSummary = await artifactUsageReport.createReport(currentPeriodDays, path, repos, owner, octokit);
+
+    return core.notice(reportSummary);
   } catch(error) {
     core.setFailed(error.message);
   }

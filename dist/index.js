@@ -30944,6 +30944,35 @@ var __webpack_exports__ = {};
 var github = __nccwpck_require__(3746);
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(6791);
+;// CONCATENATED MODULE: ./src/repo-names.js
+async function getRepoNames(owner, octokit) {
+  let repoNames = [];
+
+  try {
+    await octokit.paginate(
+      octokit.rest.repos.listForOrg,
+      { 
+        owner,
+        per_page: 100
+      },
+      (response, done) => {
+        let activeRepos = response.data.filter(
+          (repo) => repo.archived === 'false' || repo.archived === false
+        );
+        repoNames.push(...activeRepos.map((repo) => repo.name));
+      }
+    );
+  } catch(error) {
+    throw error;
+  }
+
+  return repoNames;
+}
+
+const repoNames = {
+  getRepoNames: getRepoNames
+}
+
 ;// CONCATENATED MODULE: ./src/usage-calculator.js
 function calculate(artifact, startDate, endDate, currentPeriodDays) {
   let currentPeriodBillableDays = currentPeriodDays;
@@ -31036,16 +31065,47 @@ const repoArtifacts = {
   getArtifacts: getArtifacts
 }
 
+;// CONCATENATED MODULE: ./src/org-repos.js
+
+
+
+async function getArtifactsForRepos(currentPeriodDays, repos, owner, octokit) {
+  let artifacts = [];
+
+  try {
+    let names = [];
+    if (repos.length === 1 && repos[0] === 'all') {
+      names = await repoNames.getRepoNames(owner, octokit);
+    } else {
+      names = repos;
+    }
+  
+    for (let repo of names) {
+      let rpArtifacts = await repoArtifacts.getArtifacts(currentPeriodDays, repo, owner, octokit);
+      artifacts.push(...rpArtifacts);
+    }
+
+    return artifacts;
+  } catch(error) {
+    throw error;
+  }
+}
+
+const orgRepos = {
+  getArtifactsForRepos: getArtifactsForRepos
+}
+
 // EXTERNAL MODULE: external "fs"
 var external_fs_ = __nccwpck_require__(7147);
 ;// CONCATENATED MODULE: ./src/artifact-report.js
 
 
 
-async function createReport(currentPeriodDays, path, repo, owner, octokit) {
+async function createReport(currentPeriodDays, path, repos, owner, octokit) {
   let artifacts = [];
+
   try {
-    artifacts = await repoArtifacts.getArtifacts(currentPeriodDays, repo, owner, octokit);
+    artifacts = await orgRepos.getArtifactsForRepos(currentPeriodDays, repos, owner, octokit);
 
     if (artifacts.length === 0) {
       return 'No artifacts found.';
@@ -31056,7 +31116,7 @@ async function createReport(currentPeriodDays, path, repo, owner, octokit) {
     throw error;
   }
 
-  return reportSummary(repo, artifacts);
+  return reportSummary(repos, artifacts);
 }
 
 function writeReport(artifacts, path) {
@@ -31109,10 +31169,13 @@ function writeFile(path, data, callback) {
   external_fs_.writeFile(path, data, callback);
 }
 
-function reportSummary(repo, artifacts) {
-  let reportSummary = 'Repo: ' + repo + '. \n' +
-    'Total artifacts found: ' + artifacts.length.toString() + '. \n' +
-    'Current period usage in bytes: ' + artifacts.reduce((total, artifact) => total + artifact.current_period_usage_in_bytes, 0) + '.'
+function reportSummary(repos, artifacts) {
+  let reposSummary = repos.length === 1 && repos[0] === 'all' ? 'All Org Repos.' : repos.join(', ') + '.';
+  let usageSummary = artifacts.reduce((total, artifact) => total + artifact.current_period_usage_in_bytes, 0);
+
+  let reportSummary = 'Repos: ' + reposSummary + '\n' +
+    'Total artifacts found: ' + artifacts.length.toString() + '.\n' +
+    'Current period usage in bytes: ' + usageSummary.toString() + '.';
 
   return reportSummary;
 }
@@ -31122,7 +31185,32 @@ const artifactUsageReport = {
   createReport: createReport
 }
 
+;// CONCATENATED MODULE: ./src/process-input.js
+function processInput (daysInput, reposInput, context) {
+  let input = {
+    currentPeriodDays: 30,
+    repos: [context.repo.repo],
+    owner: context.repo.owner
+  }
+
+  if (reposInput != null && reposInput.length > 0) {
+    input.repos = reposInput.split(',');
+  }
+
+  let days = parseInt(daysInput);
+  if (days != NaN && days > 0 && days <= 400) {
+    input.currentPeriodDays = days;
+  } else if (days != NaN && (days <= 0 || days > 400)) {
+    throw new Error('current_period_days must be greater than 0 and less than or equal to 400.');
+  }
+
+  return input;
+}
+
+
+
 ;// CONCATENATED MODULE: ./index.js
+
 
 
 
@@ -31141,14 +31229,15 @@ async function main() {
   try {
     const token = core.getInput('token');
     const octokit = new github.getOctokit(token);
-    const currentPeriodDays = processInput(core.getInput('current_period_days'));
+    const daysInput = core.getInput('current_period_days');
     const path = core.getInput('path');
-    const owner = context.repo.owner;
-    const repo = context.repo.repo;
+    const reposInput = core.getInput('repos');
 
-    await artifactUsageReport.createReport(currentPeriodDays, path, repo, owner, octokit);
+    const { currentPeriodDays, repos, owner } = processInput(daysInput, reposInput, context);
 
-    return core.notice('Artifact usage report created.');
+    const reportSummary = await artifactUsageReport.createReport(currentPeriodDays, path, repos, owner, octokit);
+
+    return core.notice(reportSummary);
   } catch(error) {
     core.setFailed(error.message);
   }

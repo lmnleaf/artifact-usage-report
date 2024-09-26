@@ -1,13 +1,13 @@
 import { artifactUsageReport } from '../src/artifact-report.js';
-import { repoArtifacts } from '../src/repo-artifacts.js';
+import { orgRepos } from '../src/org-repos.js';
 import Moctokit from './support/moctokit.js';
 
 describe("Artifacts Usage Report", function() {
   let octokit;
-  let getArtifactsOriginal;
+  let getArtifactsForReposOriginal;
   let owner = 'orgA';
-  let repo = 'repoA';
-  let totalDays = null;
+  let repos = ['repoA', 'repoB'];
+  let currentPeriodDays = null;
   let path = '/home/runner/work/this-repo/this-repo/';
   let mockData = [
     {
@@ -99,7 +99,7 @@ describe("Artifacts Usage Report", function() {
   beforeEach(() => {
     octokit = new Moctokit();
 
-    getArtifactsOriginal = repoArtifacts.getArtifacts;
+    getArtifactsForReposOriginal = orgRepos.getArtifactsForRepos;
 
     artifactUsageReport.writeFile = jasmine.createSpy('writeFile').and.callFake((path, data, callback) => {
       callback(null); // Simulate successful write operation
@@ -108,15 +108,15 @@ describe("Artifacts Usage Report", function() {
 
   afterEach(() => {
     // reset to original module function, so doesn't affect other tests
-    repoArtifacts.getArtifacts = getArtifactsOriginal;
+    orgRepos.getArtifactsForRepos = getArtifactsForReposOriginal;
   });
 
- it ('creates a CSV of artifacts', async function() {
-    spyOn(repoArtifacts, 'getArtifacts').and.returnValue(Promise.resolve(mockData));
+  it ('creates a CSV of artifacts', async function() {
+    spyOn(orgRepos, 'getArtifactsForRepos').and.returnValue(Promise.resolve(mockData));
 
-    await artifactUsageReport.createReport(totalDays, path, repo, owner, octokit);
+    await artifactUsageReport.createReport(currentPeriodDays, path, repos, owner, octokit);
 
-    expect(repoArtifacts.getArtifacts).toHaveBeenCalledWith(totalDays, repo, owner, octokit);
+    expect(orgRepos.getArtifactsForRepos).toHaveBeenCalledWith(currentPeriodDays, repos, owner, octokit);
     expect(artifactUsageReport.writeFile).toHaveBeenCalled();
 
     const args = artifactUsageReport.writeFile.calls.mostRecent().args;
@@ -166,21 +166,33 @@ describe("Artifacts Usage Report", function() {
     );
   });
 
-  it ('returns a report summary', async function() {
-    spyOn(repoArtifacts, 'getArtifacts').and.returnValue(Promise.resolve(mockData));
+  it ('returns a report summary when the report covers a list of repos', async function() {
+    spyOn(orgRepos, 'getArtifactsForRepos').and.returnValue(Promise.resolve(mockData));
 
-    const reportSummary = await artifactUsageReport.createReport(totalDays, path, repo, owner, octokit);
+    const reportSummary = await artifactUsageReport.createReport(currentPeriodDays, path, repos, owner, octokit);
 
     expect(reportSummary).toEqual(
-      'Repo: repoA.' +
-      'Total artifacts found: 4.' +
+      'Repos: repoA, repoB.\n' +
+      'Total artifacts found: 4.\n' +
+      'Current period usage in bytes: 3881166.'
+    );
+  });
+
+  it ('returns a report summary when the report covers all org repos', async function() {
+    spyOn(orgRepos, 'getArtifactsForRepos').and.returnValue(Promise.resolve(mockData));
+
+    const reportSummary = await artifactUsageReport.createReport(currentPeriodDays, path, ['all'], owner, octokit);
+
+    expect(reportSummary).toEqual(
+      'Repos: All Org Repos.\n' +
+      'Total artifacts found: 4.\n' +
       'Current period usage in bytes: 3881166.'
     );
   });
 
   it('returns a report summary when there are no Artifacts found', async function() {
-    spyOn(repoArtifacts, 'getArtifacts').and.returnValue(Promise.resolve([]));
-    const reportSummary= await artifactUsageReport.createReport(totalDays, path, repo, owner, octokit);
+    spyOn(orgRepos, 'getArtifactsForRepos').and.returnValue(Promise.resolve([]));
+    const reportSummary= await artifactUsageReport.createReport(currentPeriodDays, path, repos, owner, octokit);
 
     expect(reportSummary).toEqual(
       'No artifacts found.'
@@ -190,10 +202,10 @@ describe("Artifacts Usage Report", function() {
   it('handles errors', async function() {
     let repos = 'repo1,repo2';
     let caughtError;
-    spyOn(repoArtifacts, 'getArtifacts').and.returnValue(Promise.reject(new Error('fetch error')));
+    spyOn(orgRepos, 'getArtifactsForRepos').and.returnValue(Promise.reject(new Error('fetch error')));
 
     try {
-      await artifactUsageReport.createReport(totalDays, path, repo, owner, octokit);
+      await artifactUsageReport.createReport(currentPeriodDays, path, repos, owner, octokit);
     } catch (error) {
       caughtError = error;
     }
