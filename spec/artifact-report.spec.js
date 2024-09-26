@@ -29,7 +29,8 @@ describe("Artifacts Usage Report", function() {
         head_sha: 'a8be65a390c2bff1eddd634387ebcf41cc21ada1'
       },
       current_period_usage_in_bytes: 970290,
-      total_usage_in_bytes: 87318810
+      total_usage_in_bytes: 87318810,
+      repo: 'repoA'
     },
     {
       id: 1774246572,
@@ -50,7 +51,8 @@ describe("Artifacts Usage Report", function() {
         head_sha: "a8be65a390c2bff1eddd634387ebcf41cc21ada1"
       },
       current_period_usage_in_bytes: 970291,
-      total_usage_in_bytes: 859639770
+      total_usage_in_bytes: 859639770,
+      repo: 'repoA'
     },
     {
       id: 1723785662,
@@ -71,7 +73,8 @@ describe("Artifacts Usage Report", function() {
         head_sha: "a8be65a390c2bff1eddd634387ebcf41cc21ada1"
       },
       current_period_usage_in_bytes: 970292,
-      total_usage_in_bytes: 42915721680
+      total_usage_in_bytes: 42915721680,
+      repo: 'repoA'
     },
     {
       id: 1653352608,
@@ -92,7 +95,8 @@ describe("Artifacts Usage Report", function() {
         head_sha: "a8be65a390c2bff1eddd634387ebcf41cc21ada1"
       },
       current_period_usage_in_bytes: 970293,
-      total_usage_in_bytes: 8409690
+      total_usage_in_bytes: 8409690,
+      repo: 'repoA'
     }
   ]
 
@@ -114,9 +118,9 @@ describe("Artifacts Usage Report", function() {
   it ('creates a CSV of artifacts', async function() {
     spyOn(orgRepos, 'getArtifactsForRepos').and.returnValue(Promise.resolve(mockData));
 
-    await artifactUsageReport.createReport(currentPeriodDays, path, repos, owner, octokit);
+    await artifactUsageReport.createReport(currentPeriodDays, path, ['repoA'], owner, octokit);
 
-    expect(orgRepos.getArtifactsForRepos).toHaveBeenCalledWith(currentPeriodDays, repos, owner, octokit);
+    expect(orgRepos.getArtifactsForRepos).toHaveBeenCalledWith(currentPeriodDays, ['repoA'], owner, octokit);
     expect(artifactUsageReport.writeFile).toHaveBeenCalled();
 
     const args = artifactUsageReport.writeFile.calls.mostRecent().args;
@@ -131,6 +135,7 @@ describe("Artifacts Usage Report", function() {
     expect(lines[0]).toContain(
       'id,node_id,name,size_in_bytes,current_period_usage_in_bytes,total_usage_in_bytes,expired,' +
       'created_at,updated_at,expires_at,' +
+      'repo,' +
       'workflow_run.id,workflow_run.repository_id,' +
       'workflow_run.head_repository_id,workflow_run.head_branch,workflow_run.head_sha,' +
       'url,' +
@@ -139,6 +144,7 @@ describe("Artifacts Usage Report", function() {
     expect(lines[1]).toContain(
       '1935320941,MDg6QXJ0aWZhY3QxOTM1MzIwOTQx,artifact,970209,970290,87318810,false,' +
       '2024-09-15T22:51:24Z,2024-09-15T22:51:25Z,2024-12-14T22:49:56Z,' +
+      'repoA,' +
       '10874914009,476841352,476841352,main,a8be65a390c2bff1eddd634387ebcf41cc21ada1,' +
       'https://api.github.com/repos/orgA/repoA/actions/artifacts/1935320941,' +
       'https://api.github.com/repos/orgA/repoA/actions/artifacts/1935320941/zip'
@@ -146,6 +152,7 @@ describe("Artifacts Usage Report", function() {
     expect(lines[2]).toContain(
       '1774246572,MDg6QXJ0aWZhY3QxNzc0MjQ2NTcy,artifact,9551553,970291,859639770,false,' +
       '2024-09-04T22:50:50Z,2024-09-04T22:50:51Z,2024-12-02T22:49:21Z,' +
+      'repoA,' +
       '10239848305,476841352,476841352,main,a8be65a390c2bff1eddd634387ebcf41cc21ada1,' +
       'https://api.github.com/repos/orgA/repoA/actions/artifacts/1774246572,' +
       'https://api.github.com/repos/orgA/repoA/actions/artifacts/1774246572/zip'
@@ -153,6 +160,7 @@ describe("Artifacts Usage Report", function() {
     expect(lines[3]).toContain(
       '1723785662,MDg6QXJ0aWZhY3QxNzIzNzg1NjYy,artifact,476841352,970292,42915721680,false,' +
       '2024-07-21T22:51:01Z,2024-07-21T22:51:02Z,2024-10-19T22:49:35Z,' +
+      'repoA,' +
       '10031917224,476841352,476841352,main,a8be65a390c2bff1eddd634387ebcf41cc21ada1,' +
       'https://api.github.com/repos/orgA/repoA/actions/artifacts/1723785662,' +
       'https://api.github.com/repos/orgA/repoA/actions/artifacts/1723785662/zip'
@@ -160,6 +168,7 @@ describe("Artifacts Usage Report", function() {
     expect(lines[4]).toContain(
       '1653352608,MDg6QXJ0aWZhY3QxNjUzMzUyNjA4,artifact,934441,970293,8409690,false,' +
       '2024-05-30T22:51:22Z,2024-05-30T22:51:23Z,2024-08-28T22:49:51Z,' +
+      'repoA,' +
       '9735510910,476841352,476841352,main,a8be65a390c2bff1eddd634387ebcf41cc21ada1,' +
       'https://api.github.com/repos/orgA/repoA/actions/artifacts/1653352608,' +
       'https://api.github.com/repos/orgA/repoA/actions/artifacts/1653352608/zip'

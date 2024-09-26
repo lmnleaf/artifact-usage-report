@@ -28,13 +28,13 @@ async function getArtifacts(currentPeriodDays, repo, owner, octokit) {
       }
     )
 
-    return artifactsWithUsage(artifacts, startDate, endDate, currentPeriodDays);
+    return artifactsWithUsage(artifacts, startDate, endDate, currentPeriodDays, repo);
   } catch(error) {
     throw error;
   }
 }
 
-function artifactsWithUsage(artifacts, startDate, endDate, currentPeriodDays) {
+function artifactsWithUsage(artifacts, startDate, endDate, currentPeriodDays, repo) {
   let filteredArtifacts = artifacts.filter((artifact) => new Date(artifact.expires_at) >= startDate);
 
   let artifactsWithUsage = filteredArtifacts.map((artifact) => {
@@ -42,7 +42,8 @@ function artifactsWithUsage(artifacts, startDate, endDate, currentPeriodDays) {
 
     let newArtifact = {...artifact,
       current_period_usage_in_bytes: usage.current_period_usage,
-      total_usage_in_bytes: usage.total_usage
+      total_usage_in_bytes: usage.total_usage,
+      repo: repo
     };
 
     return newArtifact;

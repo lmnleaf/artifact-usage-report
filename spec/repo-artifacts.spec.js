@@ -169,12 +169,16 @@ describe("Repo Artifacts", function() {
     expect(artifacts.length).toBe(4);
     expect(artifacts[0].current_period_usage_in_bytes).toBe(1861450);
     expect(artifacts[0].total_usage_in_bytes).toBe(10237975);
+    expect(artifacts[0].repo).toBe('repoA');
     expect(artifacts[1].current_period_usage_in_bytes).toBe(1940702);
     expect(artifacts[1].total_usage_in_bytes).toBe(4851755);
+    expect(artifacts[1].repo).toBe('repoA');
     expect(artifacts[2].current_period_usage_in_bytes).toBe(1842744);
     expect(artifacts[2].total_usage_in_bytes).toBe(4606860);
+    expect(artifacts[2].repo).toBe('repoA');
     expect(artifacts[3].current_period_usage_in_bytes).toBe(970209);
     expect(artifacts[3].total_usage_in_bytes).toBe(5821254);
+    expect(artifacts[3].repo).toBe('repoA');
   });
 
   it('handles errors', async function() {
