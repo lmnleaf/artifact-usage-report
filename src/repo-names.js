@@ -1,11 +1,11 @@
-async function getRepoNames(owner, octokit) {
+async function getRepoNames(org, octokit) {
   let repoNames = [];
 
   try {
     await octokit.paginate(
       octokit.rest.repos.listForOrg,
       { 
-        owner,
+        org,
         per_page: 100
       },
       (response, done) => {

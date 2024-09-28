@@ -30945,14 +30945,14 @@ var github = __nccwpck_require__(3746);
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(6791);
 ;// CONCATENATED MODULE: ./src/repo-names.js
-async function getRepoNames(owner, octokit) {
+async function getRepoNames(org, octokit) {
   let repoNames = [];
 
   try {
     await octokit.paginate(
       octokit.rest.repos.listForOrg,
       { 
-        owner,
+        org,
         per_page: 100
       },
       (response, done) => {
