@@ -71,7 +71,7 @@ describe("Org Repos", function() {
     let octokitTestError = new Moctokit([], true);
  
     try {
-      await repoNames.getRepoNames(owner, octokitTestError);
+      await orgRepos.getArtifactsForRepos(owner, octokitTestError);
     } catch (error) {
       caughtError = error;
     }
