@@ -76,7 +76,7 @@ function writeFile(path, data, callback) {
 }
 
 function reportSummary(repos, artifacts) {
-  let reposSummary = repos.length === 1 && repos[0] === 'all' ? 'All Org Repos.' : repos.join(', ') + '.';
+  let reposSummary = repos.length === 1 && repos[0] === 'all' ? 'all org repos.' : repos.join(', ') + '.';
   let usageSummary = artifacts.reduce((total, artifact) => total + artifact.current_period_usage_in_bytes, 0);
 
   let reportSummary = 'Repos: ' + reposSummary + '\n' +
