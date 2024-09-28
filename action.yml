@@ -2,8 +2,8 @@ name: 'Actions Artifact Usage Report'
 description: 'Generates a CSV with data about the artifacts in a repo including usage data.'
 
 branding:
-  icon: 'package'
-  color: 'green'
+  icon: 'file-text'
+  color: 'yellow'
 
 inputs:
   token:
