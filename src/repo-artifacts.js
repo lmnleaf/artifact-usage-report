@@ -30,6 +30,9 @@ async function getArtifacts(currentPeriodDays, repo, owner, octokit) {
 
     return artifactsWithUsage(artifacts, startDate, endDate, currentPeriodDays, repo);
   } catch(error) {
+    if (error.message.includes('Not Found')) {
+      throw (new Error(`Repository not found: ${repo}`));
+    }
     throw error;
   }
 }

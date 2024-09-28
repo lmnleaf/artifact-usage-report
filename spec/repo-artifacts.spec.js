@@ -211,4 +211,17 @@ describe("Repo Artifacts", function() {
 
     expect(caughtError).toEqual(new Error('fetch error'));
   });
+
+  it('handles not found errors', async function() {
+    let caughtError;
+    let octokitTestError = new Moctokit([], true, 'Not Found');
+
+    try {
+      await repoArtifacts.getArtifacts(15, repo, owner, octokitTestError);
+    } catch (error) {
+      caughtError = error;
+    }
+
+    expect(caughtError).toEqual(new Error('Repository not found: repoA'));
+  });
 });
