@@ -62,7 +62,7 @@ function writeReport(artifacts, path) {
     'archive_download_url'
   ]);
 
-  artifactUsageReport.writeFile(path + 'artifact-usage-report.csv', csvRows.join('\r\n'), (error) => {
+  artifactUsageReport.writeFile(path + '/artifact-usage-report.csv', csvRows.join('\r\n'), (error) => {
     console.log(error || 'Report created successfully.');
   })
 }

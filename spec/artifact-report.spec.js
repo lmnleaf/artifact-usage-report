@@ -8,7 +8,7 @@ describe("Artifacts Usage Report", function() {
   let owner = 'orgA';
   let repos = ['repoA', 'repoB'];
   let currentPeriodDays = null;
-  let path = '/home/runner/work/this-repo/this-repo/';
+  let path = '/home/runner/work/this-repo/this-repo';
   let mockData = [
     {
       id: 1935320941,
