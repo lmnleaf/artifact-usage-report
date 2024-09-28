@@ -7,17 +7,18 @@ branding:
 
 inputs:
   token:
-    description: 'GitHub Token'
+    description: 'GitHub Token or Personal Access Token  - use PAT to access artifacts for repos other
+      than the repo where the action is used.'
     required: true
   path:
     description: 'Path to the directory where the csv file should be saved.'
     required: true
   current_period_days:
     description: 'Integer - fetches artifacts with expires_at dates after the start of the current period,
-      inclusive of the day the action runs. For example, if total_days is set to `7`, the action will get
-      artifacts that expire at or after midnight UTC seven days ago, inclusive of today. So if today is a
-      Monday, 7 total days will include artifacts expiring on or after Tuesday of the previous week.
-      Minimum is 1 day and max is 400 days. Defaults to `30`.'
+      inclusive of the day the action runs. For example, if `current_period_days` is set to `7`, the action
+      will get artifacts that expire at or after midnight UTC seven days ago, inclusive of today. So if
+      today is a Monday, 7 total days will include artifacts expiring on or after Tuesday of the previous
+      week. Minimum is 1 day and max is 400 days. Defaults to `30`.'
     required: false
   repos:
     description: 'Comma-separated list of repository names from which artifacts should be
