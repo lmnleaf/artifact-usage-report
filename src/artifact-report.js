@@ -1,10 +1,11 @@
-import { repoArtifacts } from './repo-artifacts.js';
+import { orgRepos } from './org-repos.js';
 import * as fs from 'fs';
 
-async function createReport(currentPeriodDays, path, repo, owner, octokit) {
+async function createReport(currentPeriodDays, path, repos, owner, octokit) {
   let artifacts = [];
+
   try {
-    artifacts = await repoArtifacts.getArtifacts(currentPeriodDays, repo, owner, octokit);
+    artifacts = await orgRepos.getArtifactsForRepos(currentPeriodDays, repos, owner, octokit);
 
     if (artifacts.length === 0) {
       return 'No artifacts found.';
@@ -15,7 +16,7 @@ async function createReport(currentPeriodDays, path, repo, owner, octokit) {
     throw error;
   }
 
-  return reportSummary(repo, artifacts);
+  return reportSummary(repos, artifacts);
 }
 
 function writeReport(artifacts, path) {
@@ -30,6 +31,9 @@ function writeReport(artifacts, path) {
     artifact.created_at,
     artifact.updated_at,
     artifact.expires_at,
+    artifact.current_period_starts_at,
+    artifact.current_period_ends_at,
+    artifact.repo,
     artifact.workflow_run.id,
     artifact.workflow_run.repository_id,
     artifact.workflow_run.head_repository_id,
@@ -50,6 +54,9 @@ function writeReport(artifacts, path) {
     'created_at',
     'updated_at',
     'expires_at',
+    'current_period_starts_at',
+    'current_period_ends_at',
+    'repo',
     'workflow_run.id',
     'workflow_run.repository_id',
     'workflow_run.head_repository_id',
@@ -59,7 +66,7 @@ function writeReport(artifacts, path) {
     'archive_download_url'
   ]);
 
-  artifactUsageReport.writeFile(path + 'artifact-usage-report.csv', csvRows.join('\r\n'), (error) => {
+  artifactUsageReport.writeFile(path + '/artifact-usage-report.csv', csvRows.join('\r\n'), (error) => {
     console.log(error || 'Report created successfully.');
   })
 }
@@ -68,10 +75,13 @@ function writeFile(path, data, callback) {
   fs.writeFile(path, data, callback);
 }
 
-function reportSummary(repo, artifacts) {
-  let reportSummary = 'Repo: ' + repo + '. \n' +
-    'Total artifacts found: ' + artifacts.length.toString() + '. \n' +
-    'Current period usage in bytes: ' + artifacts.reduce((total, artifact) => total + artifact.current_period_usage_in_bytes, 0) + '.'
+function reportSummary(repos, artifacts) {
+  let reposSummary = repos.length === 1 && repos[0] === 'all' ? 'all org repos.' : repos.join(', ') + '.';
+  let usageSummary = artifacts.reduce((total, artifact) => total + artifact.current_period_usage_in_bytes, 0);
+
+  let reportSummary = 'Repos: ' + reposSummary + '\n' +
+    'Total artifacts found: ' + artifacts.length.toString() + '.\n' +
+    'Current period usage in bytes: ' + usageSummary.toString() + '.';
 
   return reportSummary;
 }

@@ -19,6 +19,13 @@ inputs:
       Monday, 7 total days will include artifacts expiring on or after Tuesday of the previous week.
       Minimum is 1 day and max is 400 days. Defaults to `30`.'
     required: false
+  repos:
+    description: 'Comma-separated list of repository names from which artifacts should be
+      fetched. For example, `best-app,cool-app`. The repos must be in the org where the action is used.
+      Set to `all` to get aftifacts from all repos in the org. When set to `all`, archived repos will not
+      be included. When `repos` is not set, the action will get artifacts for the repo where it is used.
+      When `repos` is set, include the repo where the action is used to get artifacts for that repo.'
+    required: false
 
 runs:
   using: 'node20'

@@ -3,6 +3,9 @@ class Moctokit {
     this.rest = {
       actions: {
         listArtifactsForRepo: this.listArtifacts
+      },
+      repos: {
+        listForOrg: this.listRepos
       }
     };
     this.paginate = this.mockPaginate;
@@ -27,6 +30,10 @@ class Moctokit {
   });
 
   listArtifacts() {
+    return Promise.resolve({ data: mockData });
+  }
+
+  listRepos() {
     return Promise.resolve({ data: mockData });
   }
 }
