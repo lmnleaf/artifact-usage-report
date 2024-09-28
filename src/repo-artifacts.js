@@ -43,6 +43,8 @@ function artifactsWithUsage(artifacts, startDate, endDate, currentPeriodDays, re
     let newArtifact = {...artifact,
       current_period_usage_in_bytes: usage.current_period_usage,
       total_usage_in_bytes: usage.total_usage,
+      current_period_starts_at: new Date(startDate).toISOString(),
+      current_period_ends_at: new Date(endDate).toISOString(),
       repo: repo
     };
 

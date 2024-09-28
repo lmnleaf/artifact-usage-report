@@ -31053,6 +31053,8 @@ function artifactsWithUsage(artifacts, startDate, endDate, currentPeriodDays, re
     let newArtifact = {...artifact,
       current_period_usage_in_bytes: usage.current_period_usage,
       total_usage_in_bytes: usage.total_usage,
+      current_period_starts_at: new Date(startDate).toISOString(),
+      current_period_ends_at: new Date(endDate).toISOString(),
       repo: repo
     };
 
@@ -31132,6 +31134,8 @@ function writeReport(artifacts, path) {
     artifact.created_at,
     artifact.updated_at,
     artifact.expires_at,
+    artifact.current_period_starts_at,
+    artifact.current_period_ends_at,
     artifact.repo,
     artifact.workflow_run.id,
     artifact.workflow_run.repository_id,
@@ -31153,6 +31157,8 @@ function writeReport(artifacts, path) {
     'created_at',
     'updated_at',
     'expires_at',
+    'current_period_starts_at',
+    'current_period_ends_at',
     'repo',
     'workflow_run.id',
     'workflow_run.repository_id',

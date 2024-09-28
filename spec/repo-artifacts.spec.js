@@ -159,9 +159,9 @@ describe("Repo Artifacts", function() {
   });
 
   it('sets current period and total usage on the artifacts', async function () {
-    let startDate = new Date(date);
-    startDate.setUTCDate(date.getUTCDate() - 6)
-    startDate = startDate.setUTCHours(0, 0, 0, 0);
+    // let startDate = new Date(date);
+    // startDate.setUTCDate(date.getUTCDate() - 6)
+    // startDate = startDate.setUTCHours(0, 0, 0, 0);
 
     let artifacts = await repoArtifacts.getArtifacts(2, repo, owner, octokit);
 
@@ -179,6 +179,24 @@ describe("Repo Artifacts", function() {
     expect(artifacts[3].current_period_usage_in_bytes).toBe(970209);
     expect(artifacts[3].total_usage_in_bytes).toBe(5821254);
     expect(artifacts[3].repo).toBe('repoA');
+  });
+
+  it('sets current period start and end dates on the artifacts', async function () {
+    let startDate = new Date(date);
+    startDate.setUTCDate(date.getUTCDate() - 1)
+    startDate = startDate.setUTCHours(0, 0, 0, 0);
+
+    let endDate = new Date(date);
+    endDate = endDate.setUTCHours(23, 59, 59, 999);
+
+    let artifacts = await repoArtifacts.getArtifacts(2, repo, owner, octokit);
+
+    expect(octokit.paginate).toHaveBeenCalled();
+    expect(artifacts.length).toBe(4);
+    expect(artifacts[0].current_period_starts_at).toBe(new Date(startDate).toISOString());
+    expect(artifacts[0].current_period_ends_at).toBe(new Date(endDate).toISOString());
+    expect(artifacts[3].current_period_starts_at).toBe(new Date(startDate).toISOString());
+    expect(artifacts[3].current_period_ends_at).toBe(new Date(endDate).toISOString());
   });
 
   it('handles errors', async function() {

@@ -21,6 +21,8 @@ describe("Artifacts Usage Report", function() {
       created_at: '2024-09-15T22:51:24Z',
       updated_at: '2024-09-15T22:51:25Z',
       expires_at: '2024-12-14T22:49:56Z',
+      current_period_starts_at: "2024-09-04T22:50:50Z",
+      current_period_ends_at: "2024-12-02T22:49:21Z",
       workflow_run: {
         id: 10874914009,
         repository_id: 476841352,
@@ -43,6 +45,8 @@ describe("Artifacts Usage Report", function() {
       created_at: "2024-09-04T22:50:50Z",
       updated_at: "2024-09-04T22:50:51Z",
       expires_at: "2024-12-02T22:49:21Z",
+      current_period_starts_at: '2024-09-15T22:51:24Z',
+      current_period_ends_at: '2024-12-14T22:49:56Z',
       workflow_run: {
         id: 10239848305,
         repository_id: 476841352,
@@ -65,6 +69,8 @@ describe("Artifacts Usage Report", function() {
       created_at: "2024-07-21T22:51:01Z",
       updated_at: "2024-07-21T22:51:02Z",
       expires_at: "2024-10-19T22:49:35Z",
+      current_period_starts_at: '2024-09-15T22:51:24Z',
+      current_period_ends_at: '2024-12-14T22:49:56Z',
       workflow_run: {
         id: 10031917224,
         repository_id: 476841352,
@@ -87,6 +93,8 @@ describe("Artifacts Usage Report", function() {
       created_at: "2024-05-30T22:51:22Z",
       updated_at: "2024-05-30T22:51:23Z",
       expires_at: "2024-08-28T22:49:51Z",
+      current_period_starts_at: '2024-09-15T22:51:24Z',
+      current_period_ends_at: '2024-12-14T22:49:56Z',
       workflow_run: {
         id: 9735510910,
         repository_id: 476841352,
@@ -135,6 +143,7 @@ describe("Artifacts Usage Report", function() {
     expect(lines[0]).toContain(
       'id,node_id,name,size_in_bytes,current_period_usage_in_bytes,total_usage_in_bytes,expired,' +
       'created_at,updated_at,expires_at,' +
+      'current_period_starts_at,current_period_ends_at,' +
       'repo,' +
       'workflow_run.id,workflow_run.repository_id,' +
       'workflow_run.head_repository_id,workflow_run.head_branch,workflow_run.head_sha,' +
@@ -144,6 +153,7 @@ describe("Artifacts Usage Report", function() {
     expect(lines[1]).toContain(
       '1935320941,MDg6QXJ0aWZhY3QxOTM1MzIwOTQx,artifact,970209,970290,87318810,false,' +
       '2024-09-15T22:51:24Z,2024-09-15T22:51:25Z,2024-12-14T22:49:56Z,' +
+      '2024-09-04T22:50:50Z,2024-12-02T22:49:21Z,' +
       'repoA,' +
       '10874914009,476841352,476841352,main,a8be65a390c2bff1eddd634387ebcf41cc21ada1,' +
       'https://api.github.com/repos/orgA/repoA/actions/artifacts/1935320941,' +
@@ -152,6 +162,7 @@ describe("Artifacts Usage Report", function() {
     expect(lines[2]).toContain(
       '1774246572,MDg6QXJ0aWZhY3QxNzc0MjQ2NTcy,artifact,9551553,970291,859639770,false,' +
       '2024-09-04T22:50:50Z,2024-09-04T22:50:51Z,2024-12-02T22:49:21Z,' +
+      '2024-09-15T22:51:24Z,2024-12-14T22:49:56Z,' +
       'repoA,' +
       '10239848305,476841352,476841352,main,a8be65a390c2bff1eddd634387ebcf41cc21ada1,' +
       'https://api.github.com/repos/orgA/repoA/actions/artifacts/1774246572,' +
@@ -160,6 +171,7 @@ describe("Artifacts Usage Report", function() {
     expect(lines[3]).toContain(
       '1723785662,MDg6QXJ0aWZhY3QxNzIzNzg1NjYy,artifact,476841352,970292,42915721680,false,' +
       '2024-07-21T22:51:01Z,2024-07-21T22:51:02Z,2024-10-19T22:49:35Z,' +
+      '2024-09-15T22:51:24Z,2024-12-14T22:49:56Z,' +
       'repoA,' +
       '10031917224,476841352,476841352,main,a8be65a390c2bff1eddd634387ebcf41cc21ada1,' +
       'https://api.github.com/repos/orgA/repoA/actions/artifacts/1723785662,' +
@@ -168,6 +180,7 @@ describe("Artifacts Usage Report", function() {
     expect(lines[4]).toContain(
       '1653352608,MDg6QXJ0aWZhY3QxNjUzMzUyNjA4,artifact,934441,970293,8409690,false,' +
       '2024-05-30T22:51:22Z,2024-05-30T22:51:23Z,2024-08-28T22:49:51Z,' +
+      '2024-09-15T22:51:24Z,2024-12-14T22:49:56Z,' +
       'repoA,' +
       '9735510910,476841352,476841352,main,a8be65a390c2bff1eddd634387ebcf41cc21ada1,' +
       'https://api.github.com/repos/orgA/repoA/actions/artifacts/1653352608,' +
